@@ -1,0 +1,17 @@
+refs/
+
+# Build outputs and generated project files
+build/
+*.asi
+*.lib
+*.a
+*.o
+*.obj
+*.pdb
+*.ilk
+*.exp
+
+# IDE
+.vs/
+.vscode/
+*.user
