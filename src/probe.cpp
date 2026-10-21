@@ -7,6 +7,7 @@
 
 #include "probe.h"
 
+#include "gameutil.h"
 #include "ginput.h"
 #include "log.h"
 #include "memutil.h"
@@ -301,15 +302,6 @@ void LateInit() {
                "gi=GInput NewState (c=IsConnected/field, L/R sticks, L1 L2 R1 R2, D=up,down,left,right, "
                "face=sq,tr,cr,ci, L3 R3 St Se) xi=XInput (slot, L/R sticks, LT RT, buttons hex)",
                kControlKeyNames);
-}
-
-CGame* SafeGame() {
-    uintptr_t game = 0;
-    if (!mem::Read(reinterpret_cast<uintptr_t>(gGame), game))
-        return NULL;
-    if (!mem::IsReadable(game, sizeof(CGame)))
-        return NULL;
-    return reinterpret_cast<CGame*>(game);
 }
 
 void FormatGInput(const ginput::Snapshot& gi, char* out, size_t size) {
