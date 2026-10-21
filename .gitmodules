@@ -1,0 +1,4 @@
+[submodule "vendor/plugin-sdk"]
+	path = vendor/plugin-sdk
+	url = https://github.com/DK22Pac/plugin-sdk.git
+	ignore = dirty
