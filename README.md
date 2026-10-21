@@ -17,6 +17,26 @@ Other actions keep a sensible gamepad mapping, and classic controls can be
 restored in game. It is a 9.6 port of Dege's Twin Stick mod (made for 11.44),
 built as a plugin-sdk ASI meant to coexist with GInput and Frontend Fix.
 
+## Download
+
+Every release ships the same two assets: `GTA2ModernControls.asi` and
+`SHA256SUMS`.
+
+| Channel | URL |
+|---|---|
+| Latest stable | `https://github.com/MagiCrazy/gta2-modern-controls/releases/latest/download/GTA2ModernControls.asi` |
+| Pinned version | `https://github.com/MagiCrazy/gta2-modern-controls/releases/download/vX.Y.Z/GTA2ModernControls.asi` |
+| Development (tip of `main`, untested) | `https://github.com/MagiCrazy/gta2-modern-controls/releases/download/dev/GTA2ModernControls.asi` |
+
+Replace the file name with `SHA256SUMS` to get the checksums. Scripts should
+pin a version and verify it:
+
+```sh
+base=https://github.com/MagiCrazy/gta2-modern-controls/releases/download/v0.1.0
+curl -fsSL --remote-name-all "$base/GTA2ModernControls.asi" "$base/SHA256SUMS"
+sha256sum -c SHA256SUMS
+```
+
 ## Install
 
 1. Install an ASI loader (e.g. Ultimate ASI Loader) in the GTA 2 directory.
@@ -33,7 +53,9 @@ request:
 
 - **Linux (primary)**: clang + mingw-w64 cross-compilation to i686 Windows.
   It builds `plugin_II` with plugin-sdk's own premake script, then
-  `GTA2ModernControls.asi`, and publishes it as a workflow artifact.
+  `GTA2ModernControls.asi`, and publishes it as a workflow artifact. Pushes
+  to `main` refresh the `dev` pre-release; pushing a `vX.Y.Z` tag publishes a
+  release (a `-suffix` such as `v0.2.0-rc1` makes it a pre-release).
 - **Windows (fallback, non-blocking)**: the same with MSVC / msbuild.
 
 Local build with clang + mingw-w64:

@@ -72,6 +72,53 @@ jobs:
           path: build/bin/Release/GTA2ModernControls.asi
           if-no-files-found: error
 
+  release:
+    name: Publish release
+    needs: clang-mingw
+    if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: GTA2ModernControls
+          path: dist
+
+      - name: Compute checksums
+        working-directory: dist
+        run: |
+          sha256sum GTA2ModernControls.asi > SHA256SUMS
+          cat SHA256SUMS
+
+      # Stable release: vX.Y.Z (a "-suffix" such as -rc1 marks it as a pre-release).
+      - name: Publish tagged release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          prerelease=()
+          [[ "$GITHUB_REF_NAME" == *-* ]] && prerelease=(--prerelease)
+          gh release create "$GITHUB_REF_NAME" dist/GTA2ModernControls.asi dist/SHA256SUMS \
+            --verify-tag --title "$GITHUB_REF_NAME" --generate-notes "${prerelease[@]}"
+
+      # Rolling "dev" pre-release that always tracks the tip of main.
+      - name: Publish dev pre-release
+        if: github.ref == 'refs/heads/main'
+        run: |
+          notes="Development build of ${GITHUB_SHA::7}, rebuilt on every push to main. Not for end users."
+          if gh release view dev > /dev/null 2>&1; then
+            gh api -X PATCH "repos/$GH_REPO/git/refs/tags/dev" -f sha="$GITHUB_SHA" -F force=true > /dev/null
+            gh release upload dev dist/GTA2ModernControls.asi dist/SHA256SUMS --clobber
+            gh release edit dev --prerelease --notes "$notes"
+          else
+            gh release create dev dist/GTA2ModernControls.asi dist/SHA256SUMS \
+              --target "$GITHUB_SHA" --prerelease --title "Development build" --notes "$notes"
+          fi
+
   msvc:
     name: MSVC (Win32, non-blocking)
     runs-on: windows-2025-vs2026
