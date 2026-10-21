@@ -15,7 +15,7 @@ concurrency:
 jobs:
   clang-mingw:
     name: Clang + MinGW (i686)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     env:
       CLANG_VERSION: "23"
       PREMAKE_REF: v5.0.0-beta8
@@ -49,7 +49,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: vendor/plugin-sdk/output/lib
-          key: plugin_II-mingw-clang${{ env.CLANG_VERSION }}-premake-${{ env.PREMAKE_REF }}-${{ steps.sdk.outputs.sha }}
+          key: plugin_II-${{ runner.os }}-ubuntu26.04-mingw-clang${{ env.CLANG_VERSION }}-premake-${{ env.PREMAKE_REF }}-${{ steps.sdk.outputs.sha }}
 
       - name: Build plugin_II
         if: steps.cache-sdk.outputs.cache-hit != 'true'
