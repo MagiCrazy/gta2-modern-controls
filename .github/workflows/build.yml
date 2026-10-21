@@ -1,0 +1,108 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  clang-mingw:
+    name: Clang + MinGW (i686)
+    runs-on: ubuntu-latest
+    env:
+      CLANG_VERSION: "23"
+      PREMAKE_REF: v5.0.0-beta8
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Resolve plugin-sdk commit
+        id: sdk
+        run: echo "sha=$(git rev-parse HEAD:vendor/plugin-sdk)" >> "$GITHUB_OUTPUT"
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget gnupg lsb-release software-properties-common g++-mingw-w64-i686
+          wget -q https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh "$CLANG_VERSION"
+          clang++-$CLANG_VERSION --version
+
+      - name: Install premake5
+        uses: Jarod42/install-premake5@v7
+        with:
+          ref: ${{ env.PREMAKE_REF }}
+
+      - name: Cache plugin_II
+        id: cache-sdk
+        uses: actions/cache@v6
+        with:
+          path: vendor/plugin-sdk/output/lib
+          key: plugin_II-mingw-clang${{ env.CLANG_VERSION }}-premake-${{ env.PREMAKE_REF }}-${{ steps.sdk.outputs.sha }}
+
+      - name: Build plugin_II
+        if: steps.cache-sdk.outputs.cache-hit != 'true'
+        working-directory: vendor/plugin-sdk
+        run: |
+          export PLUGIN_SDK_DIR="$PWD"
+          premake5 gmake --file=tools/premake/premake5.lua
+          make -C plugin_II config=release CXX=clang++-$CLANG_VERSION CC=clang-$CLANG_VERSION AR=ar -j"$(nproc)"
+
+      - name: Build GTA2ModernControls
+        run: |
+          premake5 gmake
+          make -C build config=release CXX=clang++-$CLANG_VERSION CC=clang-$CLANG_VERSION -j"$(nproc)"
+          file build/bin/Release/GTA2ModernControls.asi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: GTA2ModernControls
+          path: build/bin/Release/GTA2ModernControls.asi
+          if-no-files-found: error
+
+  msvc:
+    name: MSVC (Win32, non-blocking)
+    runs-on: windows-2025-vs2026
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Setup msbuild
+        uses: microsoft/setup-msbuild@v3
+
+      - name: Build plugin_II
+        shell: cmd
+        working-directory: vendor/plugin-sdk
+        run: |
+          set PLUGIN_SDK_DIR=%CD%
+          tools\premake\premake5.exe vs2026 --file=tools\premake\premake5.lua || exit /b 1
+          msbuild plugin_II\Plugin_II.vcxproj /p:Configuration=Release /p:Platform=Win32 /m /verbosity:minimal
+
+      - name: Build GTA2ModernControls
+        shell: cmd
+        run: |
+          vendor\plugin-sdk\tools\premake\premake5.exe vs2026 || exit /b 1
+          msbuild build\GTA2ModernControls.vcxproj /p:Configuration=Release /p:Platform=Win32 /m /verbosity:minimal
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: GTA2ModernControls-msvc
+          path: build/bin/Release/GTA2ModernControls.asi
+          if-no-files-found: error
