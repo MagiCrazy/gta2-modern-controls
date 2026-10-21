@@ -3,7 +3,8 @@
 ASI plugin for **GTA 2 9.6.0.0** that replaces the "tank" movement with modern
 gamepad controls, primarily for the Steam Deck.
 
-> **Status: work in progress.** Nothing is playable yet.
+> **Status: work in progress.** Vehicle and on-foot controls are in testing;
+> right-stick aiming is not implemented yet.
 
 ## What it does
 
@@ -13,8 +14,10 @@ gamepad controls, primarily for the Steam Deck.
 | In a vehicle | R2 accelerates, L2 brakes / reverses, left stick X / D-pad steers. |
 | Bonus | The right stick aims independently of the walking direction (twin-stick). |
 
-Other actions keep a sensible gamepad mapping, and classic controls can be
-restored in game. It is a 9.6 port of Dege's Twin Stick mod (made for 11.44),
+Other actions keep a sensible gamepad mapping (see
+[docs/controls-test-plan.md](docs/controls-test-plan.md)), and classic
+controls can be restored in game with **Select + R3**. Settings live in
+`GTA2ModernControls.ini`, created next to the `.asi` on first launch. It is a 9.6 port of Dege's Twin Stick mod (made for 11.44),
 built as a plugin-sdk ASI meant to coexist with GInput and Frontend Fix.
 
 ## Download
