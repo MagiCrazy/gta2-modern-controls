@@ -111,8 +111,9 @@ jobs:
         run: |
           notes="Development build of ${GITHUB_SHA::7}, rebuilt on every push to main. Not for end users."
           if gh release view dev > /dev/null 2>&1; then
-            gh api -X PATCH "repos/$GH_REPO/git/refs/tags/dev" -f sha="$GITHUB_SHA" -F force=true > /dev/null
+            # Assets first, tag last: the tag never points at a commit whose build is not uploaded yet.
             gh release upload dev dist/GTA2ModernControls.asi dist/SHA256SUMS --clobber
+            gh api -X PATCH "repos/$GH_REPO/git/refs/tags/dev" -f sha="$GITHUB_SHA" -F force=true > /dev/null
             gh release edit dev --prerelease --notes "$notes"
           else
             gh release create dev dist/GTA2ModernControls.asi dist/SHA256SUMS \
