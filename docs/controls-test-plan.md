@@ -21,13 +21,14 @@ sha256sum -c SHA256SUMS && rm SHA256SUMS
 | Button | On foot | In a car |
 |---|---|---|
 | Left stick | Walk towards that direction | Steer |
-| D-pad | Walk towards that direction (8-way) | Left / right steer, up / down next / previous radio station |
+| D-pad ← / → | Previous / next weapon | Previous / next weapon |
+| D-pad ↑ / ↓ | — | — |
 | Right stick | Aim (sprite and shots); released = aim where you walk | Look around (camera); tank / fire truck / gun jeep: aim the turret |
 | R2 | Attack | Accelerate |
 | L2 | Hold: right stick looks around instead of aiming | Brake / reverse |
 | A | Jump | Handbrake |
 | X | — | Attack |
-| L1 / R1 | Previous / next weapon | Previous / next weapon |
+| L1 / R1 | — (reserved for modifiers) | — (reserved for modifiers) |
 | Y | Enter / exit | Enter / exit |
 | B | Special | Special (horn) |
 | L3 | Repeat the last message (press again for older ones) | same |
@@ -38,14 +39,15 @@ sha256sum -c SHA256SUMS && rm SHA256SUMS
 
 On foot
 - [ ] Each of the 8 directions walks that way on screen; releasing the stick stops.
+- [ ] The D-pad no longer walks; ← / → switch weapon once per press.
 - [ ] Reversing direction turns quickly without walking the wrong way first.
 - [ ] Small stick movements do not make the player jitter in place.
-- [ ] Jump (A), attack (R2), weapon switch (L1 / R1) work, also while walking.
+- [ ] Jump (A), attack (R2), weapon switch (D-pad ← / →) work, also while walking.
 - [ ] Entering / leaving a car (Y) still works; nothing odd during the animation.
 - [ ] Pressing R2 during the enter animation does not shoot; it accelerates
       once seated.
 - [ ] Leaving a car with R2 held does not shoot; releasing then pressing R2 does.
-- [ ] Holding L1 / R1 switches weapon once per press (no flicker / cycling).
+- [ ] Holding D-pad ← / → switches weapon once per press (no flicker / cycling).
 - [ ] Falling, dying, getting arrested: no stuck movement afterwards.
 
 Aiming (right stick)
@@ -76,12 +78,11 @@ Turret vehicles (tank, fire truck, gun jeep)
 Function keys
 - [ ] L3 repeats the last mission message; pressing again shows older ones.
 - [ ] R3 shows the district name; Select + R3 still only toggles modern / classic.
-- [ ] D-pad up / down in a civilian car change the radio station; nothing in a
-      police car or on foot.
 
 In a car
 - [ ] R2 accelerates, L2 brakes then reverses, half-pressed triggers count.
-- [ ] Steering with the stick and the D-pad while accelerating.
+- [ ] Steering with the stick while accelerating; D-pad ← / → switch the
+      vehicle weapon instead of steering.
 - [ ] Handbrake (A), horn (B), attack (X) on an armed vehicle.
 
 General
