@@ -8,6 +8,7 @@
 #include "CPlayerPed.h"
 
 #include "controls.h"
+#include "look.h"
 #include "probe.h"
 #include "settings.h"
 
@@ -35,6 +36,9 @@ struct GTA2ModernControls {
         };
         if (probe)
             gmc::probe::OnHookInstalled();
+
+        if (gmc::settings::Get().look)
+            gmc::look::Install();
 
         plugin::Events::shutdownEngineEvent += []() { gmc::probe::OnShutdown(); };
     }

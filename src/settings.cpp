@@ -36,9 +36,16 @@ const char kDefaultIni[] =
     "; Right stick aims (sprite and shots) independently of the walking direction; R2 fires.\r\n"
     "Enabled=1\r\n"
     "; Right stick deflection (0-255) below which it does not aim.\r\n"
-    "DeadZone=80\r\n";
+    "DeadZone=80\r\n"
+    "\r\n"
+    "[Look]\r\n"
+    "; Right stick moves the camera in a car, and leads it towards the aim on foot.\r\n"
+    "Enabled=1\r\n"
+    "; Look distance, in % of the game's own look (Special 2 / Left Alt + arrows).\r\n"
+    "CarRange=100\r\n"
+    "OnFootRange=50\r\n";
 
-Settings g_settings = {true, true, true, 40, 96, 180, true, 80, true};
+Settings g_settings = {true, true, true, 40, 96, 180, true, 80, true, 100, 50, true};
 char g_path[MAX_PATH + 32] = {};
 
 int Clamp(int v, int lo, int hi) {
@@ -76,6 +83,9 @@ void Load() {
     s.walkTolerance = Clamp(ReadInt("OnFoot", "WalkTolerance", 180), 0, 720);
     s.aim = ReadInt("Aim", "Enabled", 1) != 0;
     s.aimDeadZone = Clamp(ReadInt("Aim", "DeadZone", 80), 1, 254);
+    s.look = ReadInt("Look", "Enabled", 1) != 0;
+    s.lookCarRange = Clamp(ReadInt("Look", "CarRange", 100), 0, 200);
+    s.lookFootRange = Clamp(ReadInt("Look", "OnFootRange", 50), 0, 200);
 }
 
 const Settings& Get() {

@@ -13,7 +13,10 @@ struct Settings {
     int turnStep;          // on foot: max heading change per frame (degrees x 4)
     int walkTolerance;     // on foot: walk only once facing within this of the target (degrees x 4)
     bool aim;              // right stick aims independently of the walking direction
-    int aimDeadZone;       // 0..255: right stick deflection below this does not aim
+    int aimDeadZone;       // 0..255: right stick deflection below this does not aim (nor look)
+    bool look;             // right stick moves the camera (in car) / leads it towards the aim (on foot)
+    int lookCarRange;      // % of the game's max look offset, in a car
+    int lookFootRange;     // % of the game's max look offset, on foot
     bool probeLog;         // write GTA2ModernControls.log (diagnostics)
 };
 

@@ -36,10 +36,10 @@ enum Mode { MODE_NONE, MODE_FOOT, MODE_CAR, MODE_TRANSITION };
 
 bool g_prevR3 = false;
 Mode g_prevMode = MODE_NONE;
-// A trigger held while leaving a car must be released before it acts on foot,
-// so that accelerating does not turn into shooting.
+// R2 held while leaving a car must be released before it shoots on foot, so
+// that accelerating does not turn into shooting.
 bool g_r2Latched = false;
-bool g_l2Latched = false;
+Context g_context = CONTEXT_NONE;
 
 // The CALL at 0x4A7683 is the game's button decode (0x4A4AE0), wrapped by
 // GInput. For each button it sets the value and a "changed since last frame"
@@ -104,14 +104,12 @@ void ApplyVehicle(CPlayerPed* p, const pad::State& pad, int threshold) {
     SetButton(p->m_bButtonHandbrakeJump, p->m_bOldButtonHandbrakeJump, pad.cross);
     SetButton(p->m_bButtonPrevWeapon, p->m_bOldButtonPrevWeapon, pad.l1);
     SetButton(p->m_bButtonNextWeapon, p->m_bOldButtonNextWeapon, pad.r1);
-    SetButton(p->m_bButtonSpecial2, p->m_bOldButtonSpecial2, pad.l3);
 }
 
 // Entering / leaving a car: the game drives the ped, but GInput's mapping
 // would still fire on R2 and switch weapons on L2; keep the triggers inert.
 void ApplyTransition(CPlayerPed* p, const pad::State& pad) {
     SetButton(p->m_bButtonAttack, p->m_bOldButtonAttack, false);
-    SetButton(p->m_bButtonSpecial2, p->m_bOldButtonSpecial2, false);
     SetButton(p->m_bButtonPrevWeapon, p->m_bOldButtonPrevWeapon, pad.l1);
     SetButton(p->m_bButtonNextWeapon, p->m_bOldButtonNextWeapon, pad.r1);
 }
@@ -166,7 +164,6 @@ void ApplyOnFoot(CPlayerPed* p, CPed* ped, const pad::State& pad, const settings
         aim::SetTarget(NULL);
 
     bool r2 = TriggerPressed(pad.r2, g_r2Latched, cfg.triggerThreshold);
-    bool l2 = TriggerPressed(pad.l2, g_l2Latched, cfg.triggerThreshold);
 
     SetButton(p->m_bButtonForward, p->m_bOldButtonForward, walk);
     SetButton(p->m_bButtonBackward, p->m_bOldButtonBackward, false);
@@ -176,7 +173,6 @@ void ApplyOnFoot(CPlayerPed* p, CPed* ped, const pad::State& pad, const settings
     SetButton(p->m_bButtonHandbrakeJump, p->m_bOldButtonHandbrakeJump, pad.cross);
     SetButton(p->m_bButtonPrevWeapon, p->m_bOldButtonPrevWeapon, pad.l1);
     SetButton(p->m_bButtonNextWeapon, p->m_bOldButtonNextWeapon, pad.r1);
-    SetButton(p->m_bButtonSpecial2, p->m_bOldButtonSpecial2, l2 || pad.l3);
 }
 
 Mode ModeOf(CPed* ped) {
@@ -193,6 +189,7 @@ void Apply(CPlayerPed* player) {
     CGame* game = SafeGame();
     if (!game || !player || player != game->m_pCurrentPlayer)
         return;
+    g_context = CONTEXT_NONE;
     if (game->m_eGameStatus != GAME_RUN)
         return;
     if (!mem::IsReadable(player, sizeof(CPlayerPed)))
@@ -220,10 +217,8 @@ void Apply(CPlayerPed* player) {
     }
 
     Mode mode = ModeOf(ped);
-    if (mode == MODE_FOOT && g_prevMode != MODE_FOOT) {
+    if (mode == MODE_FOOT && g_prevMode != MODE_FOOT)
         g_r2Latched = pad.r2 > cfg.triggerThreshold;
-        g_l2Latched = pad.l2 > cfg.triggerThreshold;
-    }
     g_prevMode = mode;
 
     if (mode != MODE_FOOT || !cfg.onFoot)
@@ -231,20 +226,28 @@ void Apply(CPlayerPed* player) {
 
     switch (mode) {
     case MODE_CAR:
-        if (cfg.vehicle)
+        if (cfg.vehicle) {
             ApplyVehicle(player, pad, cfg.triggerThreshold);
+            g_context = CONTEXT_IN_CAR;
+        }
         break;
     case MODE_TRANSITION:
         if (cfg.vehicle || cfg.onFoot)
             ApplyTransition(player, pad);
         break;
     case MODE_FOOT:
-        if (cfg.onFoot)
+        if (cfg.onFoot) {
             ApplyOnFoot(player, ped, pad, cfg);
+            g_context = CONTEXT_ON_FOOT;
+        }
         break;
     default:
         break;
     }
+}
+
+Context CurrentContext() {
+    return g_context;
 }
 
 } // namespace controls
