@@ -35,8 +35,6 @@ const double kPi = 3.14159265358979323846;
 enum Mode { MODE_NONE, MODE_FOOT, MODE_CAR, MODE_TRANSITION };
 
 // DirectInput codes of the function keys handled by ProcessKeyPresses.
-const unsigned short kDikF1 = 0x3B; // previous radio station
-const unsigned short kDikF2 = 0x3C; // next radio station
 const unsigned short kDikF7 = 0x41; // repeat the last message
 const unsigned short kDikF9 = 0x43; // show the district name
 
@@ -100,15 +98,13 @@ void Toggle() {
 //   Select + R3  toggle modern / classic
 //   L3           repeat the last message (F7)
 //   R3           show the district name (F9)
-//   D-pad up / down in a car: next / previous radio station (F2 / F1)
 // The function keys go through the game's own handler, ProcessKeyPresses
-// (0x4A7010), which takes the DIK code and applies the native checks (radio
-// only in civilian cars, message prompts, ...).
-void HandleOneShots(CPlayerPed* player, const pad::State& pad, bool inCar) {
+// (0x4A7010), which takes the DIK code and applies the native checks
+// (message prompts, ...). F1 / F2 (radio) work the same way if they ever get
+// a button.
+void HandleOneShots(CPlayerPed* player, const pad::State& pad) {
     bool l3 = pad.l3 && !g_prevPad.l3;
     bool r3 = pad.r3 && !g_prevPad.r3;
-    bool up = pad.dpadUp && !g_prevPad.dpadUp;
-    bool down = pad.dpadDown && !g_prevPad.dpadDown;
     g_prevPad = pad;
 
     if (r3 && pad.select)
@@ -117,10 +113,6 @@ void HandleOneShots(CPlayerPed* player, const pad::State& pad, bool inCar) {
         player->ProcessKeyPresses(kDikF9);
     if (l3)
         player->ProcessKeyPresses(kDikF7);
-    if (inCar && up)
-        player->ProcessKeyPresses(kDikF2);
-    if (inCar && down)
-        player->ProcessKeyPresses(kDikF1);
 }
 
 // Fire truck, tank and gun jeep: the turret is a roof object of the car whose
@@ -192,13 +184,16 @@ bool ApplyTurret(CPlayerPed* p, CCar* car, const pad::State& pad, const settings
 
 // Returns true if the right stick drives a turret.
 bool ApplyVehicle(CPlayerPed* p, CCar* car, const pad::State& pad, const settings::Settings& cfg) {
-    // Left / right (stick X, D-pad) and enter / exit stay as GInput set them.
+    // Steering from the stick only (GInput also steers with the D-pad, which
+    // now switches weapons); enter / exit stays as GInput set it.
+    p->m_bButtonLeft = pad.leftX < 0;
+    p->m_bButtonRight = pad.leftX > 0;
     SetButton(p->m_bButtonForward, p->m_bOldButtonForward, pad.r2 > cfg.triggerThreshold);
     SetButton(p->m_bButtonBackward, p->m_bOldButtonBackward, pad.l2 > cfg.triggerThreshold);
     SetButton(p->m_bButtonAttack, p->m_bOldButtonAttack, pad.square);
     SetButton(p->m_bButtonHandbrakeJump, p->m_bOldButtonHandbrakeJump, pad.cross);
-    SetButton(p->m_bButtonPrevWeapon, p->m_bOldButtonPrevWeapon, pad.l1);
-    SetButton(p->m_bButtonNextWeapon, p->m_bOldButtonNextWeapon, pad.r1);
+    SetButton(p->m_bButtonPrevWeapon, p->m_bOldButtonPrevWeapon, pad.dpadLeft);
+    SetButton(p->m_bButtonNextWeapon, p->m_bOldButtonNextWeapon, pad.dpadRight);
     return ApplyTurret(p, car, pad, cfg);
 }
 
@@ -206,8 +201,8 @@ bool ApplyVehicle(CPlayerPed* p, CCar* car, const pad::State& pad, const setting
 // would still fire on R2 and switch weapons on L2; keep the triggers inert.
 void ApplyTransition(CPlayerPed* p, const pad::State& pad) {
     SetButton(p->m_bButtonAttack, p->m_bOldButtonAttack, false);
-    SetButton(p->m_bButtonPrevWeapon, p->m_bOldButtonPrevWeapon, pad.l1);
-    SetButton(p->m_bButtonNextWeapon, p->m_bOldButtonNextWeapon, pad.r1);
+    SetButton(p->m_bButtonPrevWeapon, p->m_bOldButtonPrevWeapon, pad.dpadLeft);
+    SetButton(p->m_bButtonNextWeapon, p->m_bOldButtonNextWeapon, pad.dpadRight);
 }
 
 // Right stick sets the secondary heading used for the sprite and shots;
@@ -243,10 +238,6 @@ void ApplyOnFoot(CPlayerPed* p, CPed* ped, const pad::State& pad, bool looking, 
 
     int x = pad.leftX;
     int y = pad.leftY;
-    if (x == 0 && y == 0) {
-        x = (pad.dpadRight ? 255 : 0) - (pad.dpadLeft ? 255 : 0);
-        y = (pad.dpadUp ? 255 : 0) - (pad.dpadDown ? 255 : 0);
-    }
 
     bool walk = false;
     if (x != 0 || y != 0) {
@@ -270,8 +261,8 @@ void ApplyOnFoot(CPlayerPed* p, CPed* ped, const pad::State& pad, bool looking, 
     p->m_bButtonRight = false;
     SetButton(p->m_bButtonAttack, p->m_bOldButtonAttack, r2);
     SetButton(p->m_bButtonHandbrakeJump, p->m_bOldButtonHandbrakeJump, pad.cross);
-    SetButton(p->m_bButtonPrevWeapon, p->m_bOldButtonPrevWeapon, pad.l1);
-    SetButton(p->m_bButtonNextWeapon, p->m_bOldButtonNextWeapon, pad.r1);
+    SetButton(p->m_bButtonPrevWeapon, p->m_bOldButtonPrevWeapon, pad.dpadLeft);
+    SetButton(p->m_bButtonNextWeapon, p->m_bOldButtonNextWeapon, pad.dpadRight);
 }
 
 Mode ModeOf(CPed* ped) {
@@ -302,7 +293,7 @@ void Apply(CPlayerPed* player) {
 
     CPed* ped = player->GetPed();
     bool pedOk = mem::IsReadable(ped, sizeof(CPed));
-    HandleOneShots(player, pad, pedOk && ped->GetCar());
+    HandleOneShots(player, pad);
     const settings::Settings& cfg = settings::Get();
     if (cfg.aim)
         aim::Install();
