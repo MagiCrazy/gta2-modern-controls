@@ -21,6 +21,7 @@ sha256sum -c SHA256SUMS && rm SHA256SUMS
 | Button | On foot | In a car |
 |---|---|---|
 | Left stick / D-pad | Walk towards that direction | Steer |
+| Right stick | Aim (sprite and shots); released = aim where you walk | — |
 | R2 | Attack | Accelerate |
 | L2 | Special 2 | Brake / reverse |
 | A | Jump | Handbrake |
@@ -45,6 +46,16 @@ On foot
 - [ ] Holding L1 / R1 switches weapon once per press (no flicker / cycling).
 - [ ] Falling, dying, getting arrested: no stuck movement afterwards.
 
+Aiming (right stick)
+- [ ] Standing still, the right stick turns the player to face each of the
+      8 directions (up on the stick = up on screen); R2 shoots that way.
+- [ ] Walking one way while aiming another: shots go where the right stick
+      points, the player keeps walking where the left stick points.
+- [ ] Shooting while walking backwards (left stick away from the target).
+- [ ] Releasing the right stick: the player faces the walking direction again.
+- [ ] Throwing weapons (grenades, molotovs) go towards the aim.
+- [ ] Entering a car while aiming, and leaving it: nothing stuck, aim resets.
+
 In a car
 - [ ] R2 accelerates, L2 brakes then reverses, half-pressed triggers count.
 - [ ] Steering with the stick and the D-pad while accelerating.
@@ -67,4 +78,6 @@ General
 | `[OnFoot] TurnStep` | 96 | Max turn per frame (degrees x 4). Higher = snappier. |
 | `[OnFoot] WalkTolerance` | 180 | How well aligned the player must be before walking (degrees x 4). |
 | `[Vehicle] TriggerThreshold` | 40 | Trigger travel (0-255) that counts as pressed. |
+| `[Aim] Enabled` | 1 | Right-stick aiming. |
+| `[Aim] DeadZone` | 80 | Right stick deflection (0-255) needed to aim. |
 | `[General] ProbeLog` | 1 | Diagnostics log; send `GTA2ModernControls.log` with any report. |

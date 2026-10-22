@@ -8,6 +8,7 @@
 
 #include "controls.h"
 
+#include "aim.h"
 #include "gameutil.h"
 #include "log.h"
 #include "memutil.h"
@@ -115,12 +116,33 @@ void ApplyTransition(CPlayerPed* p, const pad::State& pad) {
     SetButton(p->m_bButtonNextWeapon, p->m_bOldButtonNextWeapon, pad.r1);
 }
 
+// Right stick sets the secondary heading used for the sprite and shots;
+// released, it follows the walking direction. Standing still, the player
+// also turns to face the aim so that walking starts from there.
+void ApplyAim(CObject* obj, const pad::State& pad, bool moving, const settings::Settings& cfg) {
+    int rx = pad.rightX;
+    int ry = pad.rightY;
+    bool aiming = rx * rx + ry * ry > cfg.aimDeadZone * cfg.aimDeadZone;
+    int heading = NormalizeHeading(obj->m_nRotation);
+    if (aiming) {
+        heading = HeadingFromStick(rx, ry);
+        if (!moving)
+            obj->m_nRotation = static_cast<short>(heading);
+    }
+    obj->field_42 = static_cast<short>(heading);
+    aim::SetTarget(obj);
+}
+
 void ApplyOnFoot(CPlayerPed* p, CPed* ped, const pad::State& pad, const settings::Settings& cfg) {
-    if (ped->m_nPedState == PEDSTATE_FALL || ped->m_nPedState == PEDSTATE_DEAD || ped->m_nPedFlags.bIsArrested)
+    if (ped->m_nPedState == PEDSTATE_FALL || ped->m_nPedState == PEDSTATE_DEAD || ped->m_nPedFlags.bIsArrested) {
+        aim::SetTarget(NULL);
         return;
+    }
     CObject* obj = ped->m_pObject;
-    if (!mem::IsReadable(obj, sizeof(CObject)))
+    if (!mem::IsReadable(obj, sizeof(CObject))) {
+        aim::SetTarget(NULL);
         return;
+    }
 
     int x = pad.leftX;
     int y = pad.leftY;
@@ -137,6 +159,11 @@ void ApplyOnFoot(CPlayerPed* p, CPed* ped, const pad::State& pad, const settings
         obj->m_nRotation = static_cast<short>(NormalizeHeading(current + step));
         walk = std::abs(delta - step) <= cfg.walkTolerance;
     }
+
+    if (cfg.aim && aim::IsInstalled())
+        ApplyAim(obj, pad, x != 0 || y != 0, cfg);
+    else
+        aim::SetTarget(NULL);
 
     bool r2 = TriggerPressed(pad.r2, g_r2Latched, cfg.triggerThreshold);
     bool l2 = TriggerPressed(pad.l2, g_l2Latched, cfg.triggerThreshold);
@@ -179,12 +206,16 @@ void Apply(CPlayerPed* player) {
 
     HandleToggle(pad);
     const settings::Settings& cfg = settings::Get();
+    if (cfg.aim)
+        aim::Install();
+
     uint8_t controlsOff = 1;
     CPed* ped = player->GetPed();
     if (!cfg.enabled ||
         !mem::Read(reinterpret_cast<uintptr_t>(player) + kControlsOffOffset, controlsOff) || controlsOff ||
         !mem::IsReadable(ped, sizeof(CPed))) {
         g_prevMode = MODE_NONE;
+        aim::SetTarget(NULL);
         return;
     }
 
@@ -194,6 +225,9 @@ void Apply(CPlayerPed* player) {
         g_l2Latched = pad.l2 > cfg.triggerThreshold;
     }
     g_prevMode = mode;
+
+    if (mode != MODE_FOOT || !cfg.onFoot)
+        aim::SetTarget(NULL);
 
     switch (mode) {
     case MODE_CAR:

@@ -3,8 +3,8 @@
 ASI plugin for **GTA 2 9.6.0.0** that replaces the "tank" movement with modern
 gamepad controls, primarily for the Steam Deck.
 
-> **Status: work in progress.** Vehicle and on-foot controls are in testing;
-> right-stick aiming is not implemented yet.
+> **Status: work in progress.** Vehicle, on-foot controls and right-stick
+> aiming are in testing.
 
 ## What it does
 

@@ -12,6 +12,8 @@ struct Settings {
     int triggerThreshold;  // 0..255: R2 / L2 above this count as pressed
     int turnStep;          // on foot: max heading change per frame (degrees x 4)
     int walkTolerance;     // on foot: walk only once facing within this of the target (degrees x 4)
+    bool aim;              // right stick aims independently of the walking direction
+    int aimDeadZone;       // 0..255: right stick deflection below this does not aim
     bool probeLog;         // write GTA2ModernControls.log (diagnostics)
 };
 

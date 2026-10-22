@@ -30,9 +30,15 @@ const char kDefaultIni[] =
     "; Max turn per frame, in degrees x 4 (96 = 24 degrees, about 2 turns per second).\r\n"
     "TurnStep=96\r\n"
     "; Start walking once facing within this angle of the stick, in degrees x 4 (180 = 45 degrees).\r\n"
-    "WalkTolerance=180\r\n";
+    "WalkTolerance=180\r\n"
+    "\r\n"
+    "[Aim]\r\n"
+    "; Right stick aims (sprite and shots) independently of the walking direction; R2 fires.\r\n"
+    "Enabled=1\r\n"
+    "; Right stick deflection (0-255) below which it does not aim.\r\n"
+    "DeadZone=80\r\n";
 
-Settings g_settings = {true, true, true, 40, 96, 180, true};
+Settings g_settings = {true, true, true, 40, 96, 180, true, 80, true};
 char g_path[MAX_PATH + 32] = {};
 
 int Clamp(int v, int lo, int hi) {
@@ -68,6 +74,8 @@ void Load() {
     s.onFoot = ReadInt("OnFoot", "Enabled", 1) != 0;
     s.turnStep = Clamp(ReadInt("OnFoot", "TurnStep", 96), 4, 720);
     s.walkTolerance = Clamp(ReadInt("OnFoot", "WalkTolerance", 180), 0, 720);
+    s.aim = ReadInt("Aim", "Enabled", 1) != 0;
+    s.aimDeadZone = Clamp(ReadInt("Aim", "DeadZone", 80), 1, 254);
 }
 
 const Settings& Get() {
