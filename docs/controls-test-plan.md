@@ -22,7 +22,7 @@ sha256sum -c SHA256SUMS && rm SHA256SUMS
 |---|---|---|
 | Left stick | Walk towards that direction | Steer |
 | D-pad ← / → | Previous / next weapon | Previous / next weapon |
-| D-pad ↑ / ↓ | — | — |
+| D-pad ↑ / ↓ | — | Next / previous radio station (civilian cars) |
 | Right stick | Aim (sprite and shots); released = aim where you walk | Look around (camera); tank / fire truck / gun jeep: aim the turret |
 | R2 | Attack | Accelerate |
 | L2 | Hold: right stick looks around instead of aiming | Brake / reverse |
@@ -78,6 +78,8 @@ Turret vehicles (tank, fire truck, gun jeep)
 Function keys
 - [ ] L3 repeats the last mission message; pressing again shows older ones.
 - [ ] R3 shows the district name; Select + R3 still only toggles modern / classic.
+- [ ] D-pad ↑ / ↓ in a civilian car change the radio station; nothing in a
+      police car or on foot.
 
 In a car
 - [ ] R2 accelerates, L2 brakes then reverses, half-pressed triggers count.

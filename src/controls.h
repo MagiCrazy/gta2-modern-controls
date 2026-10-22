@@ -6,13 +6,14 @@
 //             R2 attack, A jump.
 //   In car  : R2 accelerate, L2 brake / reverse, left stick X steer, right
 //             stick = look around (turret vehicles: aim the turret),
-//             A handbrake, X attack.
+//             A handbrake, X attack, D-pad up / down next / previous radio.
 //   Any     : D-pad left / right previous / next weapon, L3 repeat the last
-//             message, R3 district name. L1, R1, D-pad up / down are free.
+//             message, R3 district name. L1, R1 (and D-pad up / down on foot)
+//             are free.
 //   Y (enter / exit) and B (special) keep GInput's mapping. Special 2 (the
 //   game's camera-look modifier) is left alone: look.h drives the camera.
-//   R2 / L2 do nothing while entering / leaving a car, and a trigger held
-//   when leaving must be released before it acts on foot.
+//   R2 does nothing while entering / leaving a car, and R2 held when leaving
+//   must be released before it shoots on foot.
 //   Select + R3 toggles modern / classic controls.
 #pragma once
 

@@ -35,6 +35,8 @@ const double kPi = 3.14159265358979323846;
 enum Mode { MODE_NONE, MODE_FOOT, MODE_CAR, MODE_TRANSITION };
 
 // DirectInput codes of the function keys handled by ProcessKeyPresses.
+const unsigned short kDikF1 = 0x3B; // previous radio station
+const unsigned short kDikF2 = 0x3C; // next radio station
 const unsigned short kDikF7 = 0x41; // repeat the last message
 const unsigned short kDikF9 = 0x43; // show the district name
 
@@ -98,13 +100,15 @@ void Toggle() {
 //   Select + R3  toggle modern / classic
 //   L3           repeat the last message (F7)
 //   R3           show the district name (F9)
+//   D-pad up / down in a car: next / previous radio station (F2 / F1)
 // The function keys go through the game's own handler, ProcessKeyPresses
-// (0x4A7010), which takes the DIK code and applies the native checks
-// (message prompts, ...). F1 / F2 (radio) work the same way if they ever get
-// a button.
-void HandleOneShots(CPlayerPed* player, const pad::State& pad) {
+// (0x4A7010), which takes the DIK code and applies the native checks (radio
+// only in civilian cars, message prompts, ...).
+void HandleOneShots(CPlayerPed* player, const pad::State& pad, bool inCar) {
     bool l3 = pad.l3 && !g_prevPad.l3;
     bool r3 = pad.r3 && !g_prevPad.r3;
+    bool up = pad.dpadUp && !g_prevPad.dpadUp;
+    bool down = pad.dpadDown && !g_prevPad.dpadDown;
     g_prevPad = pad;
 
     if (r3 && pad.select)
@@ -113,6 +117,10 @@ void HandleOneShots(CPlayerPed* player, const pad::State& pad) {
         player->ProcessKeyPresses(kDikF9);
     if (l3)
         player->ProcessKeyPresses(kDikF7);
+    if (inCar && up)
+        player->ProcessKeyPresses(kDikF2);
+    if (inCar && down)
+        player->ProcessKeyPresses(kDikF1);
 }
 
 // Fire truck, tank and gun jeep: the turret is a roof object of the car whose
@@ -293,7 +301,7 @@ void Apply(CPlayerPed* player) {
 
     CPed* ped = player->GetPed();
     bool pedOk = mem::IsReadable(ped, sizeof(CPed));
-    HandleOneShots(player, pad);
+    HandleOneShots(player, pad, pedOk && ped->GetCar());
     const settings::Settings& cfg = settings::Get();
     if (cfg.aim)
         aim::Install();
