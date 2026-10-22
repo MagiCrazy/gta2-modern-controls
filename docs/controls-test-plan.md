@@ -21,15 +21,14 @@ sha256sum -c SHA256SUMS && rm SHA256SUMS
 | Button | On foot | In a car |
 |---|---|---|
 | Left stick / D-pad | Walk towards that direction | Steer |
-| Right stick | Aim (sprite and shots); released = aim where you walk | — |
+| Right stick | Aim (sprite and shots), camera leads towards the aim; released = aim where you walk | Look around (camera) |
 | R2 | Attack | Accelerate |
-| L2 | Special 2 | Brake / reverse |
+| L2 | — | Brake / reverse |
 | A | Jump | Handbrake |
 | X | — | Attack |
 | L1 / R1 | Previous / next weapon | Previous / next weapon |
 | Y | Enter / exit | Enter / exit |
 | B | Special | Special (horn) |
-| L3 | Special 2 | Special 2 |
 | Select + R3 | Toggle modern / classic | Toggle modern / classic |
 
 ## Checklist
@@ -56,6 +55,14 @@ Aiming (right stick)
 - [ ] Throwing weapons (grenades, molotovs) go towards the aim.
 - [ ] Entering a car while aiming, and leaving it: nothing stuck, aim resets.
 
+Camera look
+- [ ] In a car, the right stick moves the view that way (further with more
+      deflection), also while driving; releasing it recentres smoothly.
+- [ ] On foot, aiming moves the view a bit towards the aim; releasing recentres.
+- [ ] Holding L2 on foot no longer freezes the player (it used to trigger the
+      game's look modifier).
+- [ ] Keyboard Left Alt + arrows still looks around (if a keyboard is at hand).
+
 In a car
 - [ ] R2 accelerates, L2 brakes then reverses, half-pressed triggers count.
 - [ ] Steering with the stick and the D-pad while accelerating.
@@ -79,5 +86,8 @@ General
 | `[OnFoot] WalkTolerance` | 180 | How well aligned the player must be before walking (degrees x 4). |
 | `[Vehicle] TriggerThreshold` | 40 | Trigger travel (0-255) that counts as pressed. |
 | `[Aim] Enabled` | 1 | Right-stick aiming. |
-| `[Aim] DeadZone` | 80 | Right stick deflection (0-255) needed to aim. |
+| `[Aim] DeadZone` | 80 | Right stick deflection (0-255) needed to aim or look. |
+| `[Look] Enabled` | 1 | Right-stick camera look. |
+| `[Look] CarRange` | 100 | Look distance in a car, % of the game's own look. |
+| `[Look] OnFootRange` | 50 | Camera lead towards the aim on foot, same unit. |
 | `[General] ProbeLog` | 1 | Diagnostics log; send `GTA2ModernControls.log` with any report. |
