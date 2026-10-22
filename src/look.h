@@ -3,8 +3,10 @@
 // active CCamera (+0x48 X, +0x4C Y, Fix16) and freezes the player while held.
 // We write that offset ourselves, after the game's look / reset step, so the
 // look is analog and works while driving or walking:
-//   in a car : right stick = look in that direction;
-//   on foot  : the camera leads towards the aim (right stick), shorter range.
+//   in a car : right stick = look in that direction (not in turret vehicles,
+//              where it aims the turret);
+//   on foot  : L2 held + right stick = look in that direction (the right
+//              stick alone aims, with a still camera).
 #pragma once
 
 namespace gmc {

@@ -88,10 +88,21 @@ void OnLookStep(CPlayerPed* player, CCamera* camera) {
     const settings::Settings& cfg = settings::Get();
     int tx = 0;
     int ty = 0;
-    controls::Context ctx = controls::CurrentContext();
+    // Looking only where the right stick is not aiming something else.
+    int range = 0;
+    switch (controls::CurrentContext()) {
+    case controls::CONTEXT_IN_CAR:
+        range = cfg.lookCarRange;
+        break;
+    case controls::CONTEXT_ON_FOOT_LOOKING:
+        range = cfg.lookFootRange;
+        break;
+    default:
+        break;
+    }
     pad::State pad;
-    if (cfg.enabled && cfg.look && ctx != controls::CONTEXT_NONE && pad::Read(pad))
-        TargetFromStick(pad, ctx == controls::CONTEXT_IN_CAR ? cfg.lookCarRange : cfg.lookFootRange, tx, ty);
+    if (cfg.enabled && cfg.look && range > 0 && pad::Read(pad))
+        TargetFromStick(pad, range, tx, ty);
 
     // Idle: leave the game's own look (Left Alt + arrows) untouched.
     if (tx == 0 && ty == 0 && g_x == 0 && g_y == 0)
