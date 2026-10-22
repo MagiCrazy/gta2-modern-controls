@@ -20,15 +20,18 @@ sha256sum -c SHA256SUMS && rm SHA256SUMS
 
 | Button | On foot | In a car |
 |---|---|---|
-| Left stick / D-pad | Walk towards that direction | Steer |
-| Right stick | Aim (sprite and shots), camera leads towards the aim; released = aim where you walk | Look around (camera) |
+| Left stick | Walk towards that direction | Steer |
+| D-pad | Walk towards that direction (8-way) | Left / right steer, up / down next / previous radio station |
+| Right stick | Aim (sprite and shots); released = aim where you walk | Look around (camera); tank / fire truck / gun jeep: aim the turret |
 | R2 | Attack | Accelerate |
-| L2 | — | Brake / reverse |
+| L2 | Hold: right stick looks around instead of aiming | Brake / reverse |
 | A | Jump | Handbrake |
 | X | — | Attack |
 | L1 / R1 | Previous / next weapon | Previous / next weapon |
 | Y | Enter / exit | Enter / exit |
 | B | Special | Special (horn) |
+| L3 | Repeat the last message (press again for older ones) | same |
+| R3 | Show the district name | same |
 | Select + R3 | Toggle modern / classic | Toggle modern / classic |
 
 ## Checklist
@@ -58,10 +61,23 @@ Aiming (right stick)
 Camera look
 - [ ] In a car, the right stick moves the view that way (further with more
       deflection), also while driving; releasing it recentres smoothly.
-- [ ] On foot, aiming moves the view a bit towards the aim; releasing recentres.
-- [ ] Holding L2 on foot no longer freezes the player (it used to trigger the
-      game's look modifier).
+- [ ] On foot, aiming with the right stick keeps the camera still.
+- [ ] On foot, holding L2 + right stick looks around (aim frozen, player can
+      still walk); releasing L2 recentres smoothly and aiming resumes.
 - [ ] Keyboard Left Alt + arrows still looks around (if a keyboard is at hand).
+
+Turret vehicles (tank, fire truck, gun jeep)
+- [ ] The right stick points the turret / water cannon at that direction on
+      screen, also while turning; X fires that way (fire truck not off by 180°).
+- [ ] Releasing the right stick: the turret keeps its angle relative to the vehicle.
+- [ ] Steering while aiming the turret still steers.
+- [ ] Stick released, B + left / right still rotates the turret as in the original game.
+
+Function keys
+- [ ] L3 repeats the last mission message; pressing again shows older ones.
+- [ ] R3 shows the district name; Select + R3 still only toggles modern / classic.
+- [ ] D-pad up / down in a civilian car change the radio station; nothing in a
+      police car or on foot.
 
 In a car
 - [ ] R2 accelerates, L2 brakes then reverses, half-pressed triggers count.
@@ -85,9 +101,10 @@ General
 | `[OnFoot] TurnStep` | 96 | Max turn per frame (degrees x 4). Higher = snappier. |
 | `[OnFoot] WalkTolerance` | 180 | How well aligned the player must be before walking (degrees x 4). |
 | `[Vehicle] TriggerThreshold` | 40 | Trigger travel (0-255) that counts as pressed. |
+| `[Vehicle] TurretStep` | 40 | Max turret turn per frame (degrees x 4), twice the game's speed. |
 | `[Aim] Enabled` | 1 | Right-stick aiming. |
 | `[Aim] DeadZone` | 80 | Right stick deflection (0-255) needed to aim or look. |
 | `[Look] Enabled` | 1 | Right-stick camera look. |
 | `[Look] CarRange` | 100 | Look distance in a car, % of the game's own look. |
-| `[Look] OnFootRange` | 50 | Camera lead towards the aim on foot, same unit. |
+| `[Look] OnFootRange` | 100 | Look distance on foot (L2 held), same unit. |
 | `[General] ProbeLog` | 1 | Diagnostics log; send `GTA2ModernControls.log` with any report. |
