@@ -34,7 +34,13 @@ const double kPi = 3.14159265358979323846;
 
 enum Mode { MODE_NONE, MODE_FOOT, MODE_CAR, MODE_TRANSITION };
 
-bool g_prevR3 = false;
+// DirectInput codes of the function keys handled by ProcessKeyPresses.
+const unsigned short kDikF1 = 0x3B; // previous radio station
+const unsigned short kDikF2 = 0x3C; // next radio station
+const unsigned short kDikF7 = 0x41; // repeat the last message
+const unsigned short kDikF9 = 0x43; // show the district name
+
+pad::State g_prevPad = {};
 Mode g_prevMode = MODE_NONE;
 // R2 held while leaving a car must be released before it shoots on foot, so
 // that accelerating does not turn into shooting.
@@ -83,27 +89,117 @@ void ShowBrief(const wchar_t* text) {
     hud->m_HudBrief.SetHudBriefStr(text, 0);
 }
 
-// Select + R3 (rising edge of R3) toggles modern / classic controls.
-void HandleToggle(const pad::State& pad) {
-    bool pressed = pad.r3 && !g_prevR3 && pad.select;
-    g_prevR3 = pad.r3;
-    if (!pressed)
-        return;
-
+void Toggle() {
     bool on = !settings::Get().enabled;
     settings::SetEnabled(on);
     ShowBrief(on ? L"Modern controls" : L"Classic controls");
     log::Write("controls: toggled %s", on ? "MODERN" : "CLASSIC");
 }
 
-void ApplyVehicle(CPlayerPed* p, const pad::State& pad, int threshold) {
+// One-shot buttons, in both modern and classic mode, on the press edge:
+//   Select + R3  toggle modern / classic
+//   L3           repeat the last message (F7)
+//   R3           show the district name (F9)
+//   D-pad up / down in a car: next / previous radio station (F2 / F1)
+// The function keys go through the game's own handler, ProcessKeyPresses
+// (0x4A7010), which takes the DIK code and applies the native checks (radio
+// only in civilian cars, message prompts, ...).
+void HandleOneShots(CPlayerPed* player, const pad::State& pad, bool inCar) {
+    bool l3 = pad.l3 && !g_prevPad.l3;
+    bool r3 = pad.r3 && !g_prevPad.r3;
+    bool up = pad.dpadUp && !g_prevPad.dpadUp;
+    bool down = pad.dpadDown && !g_prevPad.dpadDown;
+    g_prevPad = pad;
+
+    if (r3 && pad.select)
+        Toggle();
+    else if (r3)
+        player->ProcessKeyPresses(kDikF9);
+    if (l3)
+        player->ProcessKeyPresses(kDikF7);
+    if (inCar && up)
+        player->ProcessKeyPresses(kDikF2);
+    if (inCar && down)
+        player->ProcessKeyPresses(kDikF1);
+}
+
+// Fire truck, tank and gun jeep: the turret is a roof object of the car whose
+// angle (tRoof+0x10, heading units) is relative to the car body; the game
+// writes it the same way when a script spawns a tank (0x4AE17C), and shots
+// use the turret sprite's resulting absolute angle.
+struct Turret {
+    int carModel;
+    int objectModel;
+    int angleOffset; // turret angle that points the same way as the car
+};
+const Turret kTurrets[] = {
+    {0x11, 0x72, 720}, // FIRETRUK: water cannon faces backwards
+    {0x36, 0x94, 0},   // TANK
+    {0x16, 0xF8, 0},   // GUNJEEP
+};
+const uintptr_t kCarModel = 0x84;
+const uintptr_t kCarSprite = 0x50;
+const uintptr_t kRoofAngle = 0x10;
+
+// Returns the car's turret angle field, or NULL if the car has no turret.
+short* TurretAngle(CCar* car, int& angleOffset) {
+    int model = 0;
+    if (!mem::Read(reinterpret_cast<uintptr_t>(car) + kCarModel, model))
+        return NULL;
+    for (const Turret& t : kTurrets) {
+        if (t.carModel != model)
+            continue;
+        // 0x4BE980: finds the car's roof node holding an object of that model.
+        uintptr_t node = plugin::CallMethodAndReturn<uintptr_t, 0x4BE980, CCar*, int>(car, t.objectModel);
+        if (!mem::IsReadable(node + kRoofAngle, sizeof(short)))
+            return NULL;
+        angleOffset = t.angleOffset;
+        return reinterpret_cast<short*>(node + kRoofAngle);
+    }
+    return NULL;
+}
+
+// Right stick aims the turret at an absolute direction on screen. Returns
+// true if the car has a turret (the right stick is then not a camera look).
+bool ApplyTurret(CPlayerPed* p, CCar* car, const pad::State& pad, const settings::Settings& cfg) {
+    int angleOffset = 0;
+    short* angle = TurretAngle(car, angleOffset);
+    if (!angle)
+        return false;
+
+    int rx = pad.rightX;
+    int ry = pad.rightY;
+    if (rx * rx + ry * ry <= cfg.aimDeadZone * cfg.aimDeadZone)
+        return true; // released: the turret keeps its angle relative to the car
+
+    uintptr_t sprite = 0;
+    short carHeading = 0;
+    if (!mem::Read(reinterpret_cast<uintptr_t>(car) + kCarSprite, sprite) || !mem::Read(sprite, carHeading))
+        return true;
+
+    int target = NormalizeHeading(HeadingFromStick(rx, ry) - carHeading - angleOffset);
+    int current = NormalizeHeading(*angle);
+    int delta = HeadingDelta(current, target);
+    int step = delta > cfg.turretStep ? cfg.turretStep : (delta < -cfg.turretStep ? -cfg.turretStep : delta);
+    *angle = static_cast<short>(NormalizeHeading(current + step));
+
+    // Vanilla turns the turret with Special + left / right, which would also
+    // eat the steering: drop Special while steering and aiming.
+    if (p->m_bButtonLeft || p->m_bButtonRight)
+        SetButton(p->m_bButtonSpecial, p->m_bOldButtonSpecial, false);
+    return true;
+}
+
+// Returns true if the right stick drives a turret.
+bool ApplyVehicle(CPlayerPed* p, CCar* car, const pad::State& pad, const settings::Settings& cfg) {
     // Left / right (stick X, D-pad) and enter / exit stay as GInput set them.
-    SetButton(p->m_bButtonForward, p->m_bOldButtonForward, pad.r2 > threshold);
-    SetButton(p->m_bButtonBackward, p->m_bOldButtonBackward, pad.l2 > threshold);
+    SetButton(p->m_bButtonForward, p->m_bOldButtonForward, pad.r2 > cfg.triggerThreshold);
+    SetButton(p->m_bButtonBackward, p->m_bOldButtonBackward, pad.l2 > cfg.triggerThreshold);
     SetButton(p->m_bButtonAttack, p->m_bOldButtonAttack, pad.square);
     SetButton(p->m_bButtonHandbrakeJump, p->m_bOldButtonHandbrakeJump, pad.cross);
     SetButton(p->m_bButtonPrevWeapon, p->m_bOldButtonPrevWeapon, pad.l1);
     SetButton(p->m_bButtonNextWeapon, p->m_bOldButtonNextWeapon, pad.r1);
+    return ApplyTurret(p, car, pad, cfg);
 }
 
 // Entering / leaving a car: the game drives the ped, but GInput's mapping
@@ -116,8 +212,12 @@ void ApplyTransition(CPlayerPed* p, const pad::State& pad) {
 
 // Right stick sets the secondary heading used for the sprite and shots;
 // released, it follows the walking direction. Standing still, the player
-// also turns to face the aim so that walking starts from there.
-void ApplyAim(CObject* obj, const pad::State& pad, bool moving, const settings::Settings& cfg) {
+// also turns to face the aim so that walking starts from there. While
+// looking around (L2 held) the aim stays where it was.
+void ApplyAim(CObject* obj, const pad::State& pad, bool moving, bool looking, const settings::Settings& cfg) {
+    aim::SetTarget(obj);
+    if (looking)
+        return;
     int rx = pad.rightX;
     int ry = pad.rightY;
     bool aiming = rx * rx + ry * ry > cfg.aimDeadZone * cfg.aimDeadZone;
@@ -128,10 +228,9 @@ void ApplyAim(CObject* obj, const pad::State& pad, bool moving, const settings::
             obj->m_nRotation = static_cast<short>(heading);
     }
     obj->field_42 = static_cast<short>(heading);
-    aim::SetTarget(obj);
 }
 
-void ApplyOnFoot(CPlayerPed* p, CPed* ped, const pad::State& pad, const settings::Settings& cfg) {
+void ApplyOnFoot(CPlayerPed* p, CPed* ped, const pad::State& pad, bool looking, const settings::Settings& cfg) {
     if (ped->m_nPedState == PEDSTATE_FALL || ped->m_nPedState == PEDSTATE_DEAD || ped->m_nPedFlags.bIsArrested) {
         aim::SetTarget(NULL);
         return;
@@ -159,7 +258,7 @@ void ApplyOnFoot(CPlayerPed* p, CPed* ped, const pad::State& pad, const settings
     }
 
     if (cfg.aim && aim::IsInstalled())
-        ApplyAim(obj, pad, x != 0 || y != 0, cfg);
+        ApplyAim(obj, pad, x != 0 || y != 0, looking, cfg);
     else
         aim::SetTarget(NULL);
 
@@ -201,16 +300,17 @@ void Apply(CPlayerPed* player) {
     if (!pad::Read(pad))
         return;
 
-    HandleToggle(pad);
+    CPed* ped = player->GetPed();
+    bool pedOk = mem::IsReadable(ped, sizeof(CPed));
+    HandleOneShots(player, pad, pedOk && ped->GetCar());
     const settings::Settings& cfg = settings::Get();
     if (cfg.aim)
         aim::Install();
 
     uint8_t controlsOff = 1;
-    CPed* ped = player->GetPed();
     if (!cfg.enabled ||
         !mem::Read(reinterpret_cast<uintptr_t>(player) + kControlsOffOffset, controlsOff) || controlsOff ||
-        !mem::IsReadable(ped, sizeof(CPed))) {
+        !pedOk) {
         g_prevMode = MODE_NONE;
         aim::SetTarget(NULL);
         return;
@@ -226,10 +326,8 @@ void Apply(CPlayerPed* player) {
 
     switch (mode) {
     case MODE_CAR:
-        if (cfg.vehicle) {
-            ApplyVehicle(player, pad, cfg.triggerThreshold);
-            g_context = CONTEXT_IN_CAR;
-        }
+        if (cfg.vehicle)
+            g_context = ApplyVehicle(player, ped->GetCar(), pad, cfg) ? CONTEXT_IN_TURRET_CAR : CONTEXT_IN_CAR;
         break;
     case MODE_TRANSITION:
         if (cfg.vehicle || cfg.onFoot)
@@ -237,8 +335,10 @@ void Apply(CPlayerPed* player) {
         break;
     case MODE_FOOT:
         if (cfg.onFoot) {
-            ApplyOnFoot(player, ped, pad, cfg);
-            g_context = CONTEXT_ON_FOOT;
+            // L2 held: the right stick looks around instead of aiming.
+            bool looking = pad.l2 > cfg.triggerThreshold;
+            ApplyOnFoot(player, ped, pad, looking, cfg);
+            g_context = looking ? CONTEXT_ON_FOOT_LOOKING : CONTEXT_ON_FOOT;
         }
         break;
     default:

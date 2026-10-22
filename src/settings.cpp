@@ -23,6 +23,9 @@ const char kDefaultIni[] =
     "Enabled=1\r\n"
     "; Trigger travel (0-255) above which R2 / L2 count as pressed.\r\n"
     "TriggerThreshold=40\r\n"
+    "; Tank, fire truck, gun jeep: the right stick aims the turret. Max turn per frame,\r\n"
+    "; in degrees x 4 (40 = 10 degrees, twice the game's own speed).\r\n"
+    "TurretStep=40\r\n"
     "\r\n"
     "[OnFoot]\r\n"
     "; Left stick / D-pad give an absolute direction on screen.\r\n"
@@ -39,13 +42,13 @@ const char kDefaultIni[] =
     "DeadZone=80\r\n"
     "\r\n"
     "[Look]\r\n"
-    "; Right stick moves the camera in a car, and leads it towards the aim on foot.\r\n"
+    "; Right stick looks around in a car (except turret vehicles), and on foot while L2 is held.\r\n"
     "Enabled=1\r\n"
     "; Look distance, in % of the game's own look (Special 2 / Left Alt + arrows).\r\n"
     "CarRange=100\r\n"
-    "OnFootRange=50\r\n";
+    "OnFootRange=100\r\n";
 
-Settings g_settings = {true, true, true, 40, 96, 180, true, 80, true, 100, 50, true};
+Settings g_settings = {true, true, true, 40, 40, 96, 180, true, 80, true, 100, 100, true};
 char g_path[MAX_PATH + 32] = {};
 
 int Clamp(int v, int lo, int hi) {
@@ -78,6 +81,7 @@ void Load() {
     s.probeLog = ReadInt("General", "ProbeLog", 1) != 0;
     s.vehicle = ReadInt("Vehicle", "Enabled", 1) != 0;
     s.triggerThreshold = Clamp(ReadInt("Vehicle", "TriggerThreshold", 40), 1, 254);
+    s.turretStep = Clamp(ReadInt("Vehicle", "TurretStep", 40), 4, 720);
     s.onFoot = ReadInt("OnFoot", "Enabled", 1) != 0;
     s.turnStep = Clamp(ReadInt("OnFoot", "TurnStep", 96), 4, 720);
     s.walkTolerance = Clamp(ReadInt("OnFoot", "WalkTolerance", 180), 0, 720);
@@ -85,7 +89,7 @@ void Load() {
     s.aimDeadZone = Clamp(ReadInt("Aim", "DeadZone", 80), 1, 254);
     s.look = ReadInt("Look", "Enabled", 1) != 0;
     s.lookCarRange = Clamp(ReadInt("Look", "CarRange", 100), 0, 200);
-    s.lookFootRange = Clamp(ReadInt("Look", "OnFootRange", 50), 0, 200);
+    s.lookFootRange = Clamp(ReadInt("Look", "OnFootRange", 100), 0, 200);
 }
 
 const Settings& Get() {
