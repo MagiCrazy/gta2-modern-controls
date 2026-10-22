@@ -39,6 +39,10 @@ On foot
 - [ ] Small stick movements do not make the player jitter in place.
 - [ ] Jump (A), attack (R2), weapon switch (L1 / R1) work, also while walking.
 - [ ] Entering / leaving a car (Y) still works; nothing odd during the animation.
+- [ ] Pressing R2 during the enter animation does not shoot; it accelerates
+      once seated.
+- [ ] Leaving a car with R2 held does not shoot; releasing then pressing R2 does.
+- [ ] Holding L1 / R1 switches weapon once per press (no flicker / cycling).
 - [ ] Falling, dying, getting arrested: no stuck movement afterwards.
 
 In a car

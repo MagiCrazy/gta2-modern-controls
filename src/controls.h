@@ -6,6 +6,8 @@
 //   In car  : R2 accelerate, L2 brake / reverse, stick X / D-pad steer,
 //             A handbrake, X attack, L1 / R1 weapons, L3 special 2.
 //   Y (enter / exit) and B (special) keep GInput's mapping.
+//   R2 / L2 do nothing while entering / leaving a car, and a trigger held
+//   when leaving must be released before it acts on foot.
 //   Select + R3 toggles modern / classic controls.
 #pragma once
 
