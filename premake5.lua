@@ -20,6 +20,13 @@ end
 
 local mingw = _ACTION == "gmake" or _ACTION == "gmake2"
 
+-- Version baked into the binary (CI sets GMC_VERSION; "dev" locally). Only
+-- letters, digits, '.' and '-' so it can go through as an unquoted define.
+local version = os.getenv("GMC_VERSION")
+if version == nil or not version:match("^[%w%.%-]+$") then
+    version = "dev"
+end
+
 workspace "GTA2ModernControls"
     location "build"
     configurations { "Release", "Debug" }
@@ -51,7 +58,7 @@ project "GTA2ModernControls"
 
     libdirs { sdkdir .. "/output/lib" }
 
-    defines { "GTA2", "PLUGIN_SGV_96EN", "_CRT_SECURE_NO_WARNINGS" }
+    defines { "GTA2", "PLUGIN_SGV_96EN", "_CRT_SECURE_NO_WARNINGS", "GMC_VERSION_RAW=" .. version }
 
     filter "configurations:Release"
         defines "NDEBUG"
@@ -83,6 +90,7 @@ project "GTA2ModernControls"
             "-static",
             "-static-libgcc",
             "-static-libstdc++",
+            "-s",
         }
     else
         systemversion "latest"

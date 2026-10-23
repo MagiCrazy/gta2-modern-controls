@@ -61,6 +61,8 @@ jobs:
 
       - name: Build GTA2ModernControls
         run: |
+          # Tag name for releases, dev-<short sha> otherwise (baked into the binary).
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then export GMC_VERSION="$GITHUB_REF_NAME"; else export GMC_VERSION="dev-${GITHUB_SHA::7}"; fi
           premake5 gmake
           make -C build config=release CXX=clang++-$CLANG_VERSION CC=clang-$CLANG_VERSION -j"$(nproc)"
           file build/bin/Release/GTA2ModernControls.asi
@@ -145,6 +147,8 @@ jobs:
       - name: Build GTA2ModernControls
         shell: cmd
         run: |
+          set GMC_VERSION=dev-%GITHUB_SHA:~0,7%
+          if "%GITHUB_REF:~0,11%"=="refs/tags/v" set GMC_VERSION=%GITHUB_REF_NAME%
           vendor\plugin-sdk\tools\premake\premake5.exe vs2026 || exit /b 1
           msbuild build\GTA2ModernControls.vcxproj /p:Configuration=Release /p:Platform=Win32 /m /verbosity:minimal
 
