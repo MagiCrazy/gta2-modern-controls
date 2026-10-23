@@ -62,7 +62,9 @@ int StepTowards(int current, int target) {
 }
 
 // Target offset from the right stick: dead zone removed, then scaled to the
-// game's range times rangePercent.
+// game's range times rangePercent. The stick moves in a circle but the look
+// range is a rectangle: stretch the circle to the square so that a full
+// diagonal reaches the corner (otherwise it stops at ~70 % of each axis).
 void TargetFromStick(const pad::State& pad, int rangePercent, int& tx, int& ty) {
     tx = 0;
     ty = 0;
@@ -75,9 +77,12 @@ void TargetFromStick(const pad::State& pad, int rangePercent, int& tx, int& ty) 
     double t = (mag - dz) / (255.0 - dz);
     if (t > 1.0)
         t = 1.0;
-    double scale = t * rangePercent / 100.0 / mag;
-    tx = static_cast<int>(std::lround(rx * scale * kMaxX * kFix16));
-    ty = static_cast<int>(std::lround(-ry * scale * kMaxY * kFix16)); // stick up = screen up = -Y
+    double ux = rx / mag;
+    double uy = ry / mag;
+    double edge = std::fabs(ux) > std::fabs(uy) ? std::fabs(ux) : std::fabs(uy);
+    double scale = t * rangePercent / 100.0 / edge;
+    tx = static_cast<int>(std::lround(ux * scale * kMaxX * kFix16));
+    ty = static_cast<int>(std::lround(-uy * scale * kMaxY * kFix16)); // stick up = screen up = -Y
 }
 
 void OnLookStep(CPlayerPed* player, CCamera* camera) {
