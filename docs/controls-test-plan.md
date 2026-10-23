@@ -23,7 +23,7 @@ sha256sum -c SHA256SUMS && rm SHA256SUMS
 | Left stick | Walk towards that direction | Steer |
 | D-pad ← / → | Previous / next weapon | Previous / next weapon |
 | D-pad ↑ / ↓ | — | Next / previous radio station (civilian cars) |
-| Right stick | Aim (sprite and shots); released = aim where you walk | Look around (camera); tank / fire truck / gun jeep: aim the turret |
+| Right stick | Aim (sprite and shots); released = aim where you walk | Look around (camera); tank / fire truck / gun jeep: ← / → rotate the turret |
 | R2 | Attack | Accelerate |
 | L2 | Hold: right stick looks around instead of aiming | Brake / reverse |
 | A | Jump | Handbrake |
@@ -69,10 +69,12 @@ Camera look
 - [ ] Keyboard Left Alt + arrows still looks around (if a keyboard is at hand).
 
 Turret vehicles (tank, fire truck, gun jeep)
-- [ ] The right stick points the turret / water cannon at that direction on
-      screen, also while turning; X fires that way (fire truck not off by 180°).
+- [ ] Right stick ← / → rotates the turret / water cannon at the game's own
+      speed, one way or the other; X fires where it points.
 - [ ] Releasing the right stick: the turret keeps its angle relative to the vehicle.
-- [ ] Steering while aiming the turret still steers.
+- [ ] Steering while rotating the turret still steers.
+- [ ] `TurretAim=1`: the turret points at the right stick's direction on screen
+      instead (fire truck not off by 180°).
 - [ ] Stick released, B + left / right still rotates the turret as in the original game.
 
 Function keys
@@ -86,6 +88,9 @@ In a car
 - [ ] Steering with the stick while accelerating; D-pad ← / → switch the
       vehicle weapon instead of steering.
 - [ ] Handbrake (A), horn (B), attack (X) on an armed vehicle.
+- [ ] Police car / ambulance, siren off: holding B (> 0.25 s) honks and does
+      not toggle the siren; a short tap toggles it on release. (With the siren
+      on, the original game mutes the horn.)
 
 General
 - [ ] Select + R3 shows "Modern controls" / "Classic controls" and switches
@@ -104,7 +109,8 @@ General
 | `[OnFoot] TurnStep` | 96 | Max turn per frame (degrees x 4). Higher = snappier. |
 | `[OnFoot] WalkTolerance` | 180 | How well aligned the player must be before walking (degrees x 4). |
 | `[Vehicle] TriggerThreshold` | 40 | Trigger travel (0-255) that counts as pressed. |
-| `[Vehicle] TurretStep` | 40 | Max turret turn per frame (degrees x 4), twice the game's speed. |
+| `[Vehicle] TurretAim` | 0 | 0 = right stick ← / → rotates the turret, 1 = it points at the stick. |
+| `[Vehicle] TurretStep` | 20 | Turret turn per frame (degrees x 4), the game's own speed. |
 | `[Aim] Enabled` | 1 | Right-stick aiming. |
 | `[Aim] DeadZone` | 80 | Right stick deflection (0-255) needed to aim or look. |
 | `[Look] Enabled` | 1 | Right-stick camera look. |
