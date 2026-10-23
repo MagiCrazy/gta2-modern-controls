@@ -15,6 +15,7 @@
 #include "pad.h"
 #include "settings.h"
 
+#include <windows.h>
 #include <cmath>
 #include <cstdlib>
 
@@ -42,6 +43,15 @@ const unsigned short kDikF9 = 0x43; // show the district name
 
 pad::State g_prevPad = {};
 Mode g_prevMode = MODE_NONE;
+// Special (B) is rebuilt from the pad with our own edge tracking: the change
+// flag the decode leaves for it can claim a new press every frame while B is
+// held (play-test: holding B in a police car never honked, releasing toggled
+// the siren), which keeps re-arming the horn / siren logic (0x4260C0).
+unsigned g_frame = 0;
+unsigned g_specialFrame = 0;
+bool g_prevSpecial = false;
+unsigned g_spuriousSpecial = 0;
+DWORD g_lastSpuriousLog = 0;
 // R2 held while leaving a car must be released before it shoots on foot, so
 // that accelerating does not turn into shooting.
 bool g_r2Latched = false;
@@ -56,6 +66,25 @@ void SetButton(bool& button, bool& changed, bool value) {
     bool previous = button != changed;
     button = value;
     changed = value != previous;
+}
+
+void SetSpecial(CPlayerPed* p, bool value) {
+    bool trackedLastFrame = g_specialFrame + 1 == g_frame;
+    bool previous = trackedLastFrame ? g_prevSpecial : p->m_bButtonSpecial != p->m_bOldButtonSpecial;
+    // Diagnostics: the decode reports a change although B stayed held.
+    if (trackedLastFrame && value && g_prevSpecial && p->m_bButtonSpecial && p->m_bOldButtonSpecial)
+        ++g_spuriousSpecial;
+    p->m_bButtonSpecial = value;
+    p->m_bOldButtonSpecial = value != previous;
+    g_prevSpecial = value;
+    g_specialFrame = g_frame;
+
+    DWORD now = GetTickCount();
+    if (g_spuriousSpecial && now - g_lastSpuriousLog > 2000) {
+        log::Write("controls: %u spurious Special change flags from the decode while B was held", g_spuriousSpecial);
+        g_spuriousSpecial = 0;
+        g_lastSpuriousLog = now;
+    }
 }
 
 bool TriggerPressed(int value, bool& latched, int threshold) {
@@ -159,9 +188,13 @@ short* TurretAngle(CCar* car, int& angleOffset) {
     return NULL;
 }
 
-// Right stick aims the turret at an absolute direction on screen. Returns
-// true if the car has a turret (the right stick is then not a camera look).
-bool ApplyTurret(CPlayerPed* p, CCar* car, const pad::State& pad, const settings::Settings& cfg) {
+// Right stick turns the turret. Default (like the original game's Special +
+// left / right, but without losing the steering): stick left / right rotates
+// it at a fixed speed. TurretAim=1: it points at the stick's direction on
+// screen. Returns true if the car has a turret (the right stick is then not a
+// camera look); `active` tells whether the stick is driving it this frame.
+bool ApplyTurret(CCar* car, const pad::State& pad, const settings::Settings& cfg, bool& active) {
+    active = false;
     int angleOffset = 0;
     short* angle = TurretAngle(car, angleOffset);
     if (!angle)
@@ -169,6 +202,16 @@ bool ApplyTurret(CPlayerPed* p, CCar* car, const pad::State& pad, const settings
 
     int rx = pad.rightX;
     int ry = pad.rightY;
+    int current = NormalizeHeading(*angle);
+    if (!cfg.turretAim) {
+        if (rx > -cfg.aimDeadZone && rx < cfg.aimDeadZone)
+            return true;
+        // Left = counter-clockwise (+), as 0x423720 does for the left key.
+        *angle = static_cast<short>(NormalizeHeading(current + (rx < 0 ? cfg.turretStep : -cfg.turretStep)));
+        active = true;
+        return true;
+    }
+
     if (rx * rx + ry * ry <= cfg.aimDeadZone * cfg.aimDeadZone)
         return true; // released: the turret keeps its angle relative to the car
 
@@ -178,15 +221,10 @@ bool ApplyTurret(CPlayerPed* p, CCar* car, const pad::State& pad, const settings
         return true;
 
     int target = NormalizeHeading(HeadingFromStick(rx, ry) - carHeading - angleOffset);
-    int current = NormalizeHeading(*angle);
     int delta = HeadingDelta(current, target);
     int step = delta > cfg.turretStep ? cfg.turretStep : (delta < -cfg.turretStep ? -cfg.turretStep : delta);
     *angle = static_cast<short>(NormalizeHeading(current + step));
-
-    // Vanilla turns the turret with Special + left / right, which would also
-    // eat the steering: drop Special while steering and aiming.
-    if (p->m_bButtonLeft || p->m_bButtonRight)
-        SetButton(p->m_bButtonSpecial, p->m_bOldButtonSpecial, false);
+    active = true;
     return true;
 }
 
@@ -202,7 +240,14 @@ bool ApplyVehicle(CPlayerPed* p, CCar* car, const pad::State& pad, const setting
     SetButton(p->m_bButtonHandbrakeJump, p->m_bOldButtonHandbrakeJump, pad.cross);
     SetButton(p->m_bButtonPrevWeapon, p->m_bOldButtonPrevWeapon, pad.dpadLeft);
     SetButton(p->m_bButtonNextWeapon, p->m_bOldButtonNextWeapon, pad.dpadRight);
-    return ApplyTurret(p, car, pad, cfg);
+
+    bool turretActive = false;
+    bool turret = ApplyTurret(car, pad, cfg, turretActive);
+    // The original game turns the turret with Special + left / right, which
+    // eats the steering: drop Special while the stick turns it and we steer.
+    bool steering = p->m_bButtonLeft || p->m_bButtonRight;
+    SetSpecial(p, pad.circle && !(turretActive && steering));
+    return turret;
 }
 
 // Entering / leaving a car: the game drives the ped, but GInput's mapping
@@ -271,6 +316,7 @@ void ApplyOnFoot(CPlayerPed* p, CPed* ped, const pad::State& pad, bool looking, 
     SetButton(p->m_bButtonHandbrakeJump, p->m_bOldButtonHandbrakeJump, pad.cross);
     SetButton(p->m_bButtonPrevWeapon, p->m_bOldButtonPrevWeapon, pad.dpadLeft);
     SetButton(p->m_bButtonNextWeapon, p->m_bOldButtonNextWeapon, pad.dpadRight);
+    SetSpecial(p, pad.circle);
 }
 
 Mode ModeOf(CPed* ped) {
@@ -290,6 +336,7 @@ void Apply(CPlayerPed* player) {
     g_context = CONTEXT_NONE;
     if (game->m_eGameStatus != GAME_RUN)
         return;
+    ++g_frame;
     if (!mem::IsReadable(player, sizeof(CPlayerPed)))
         return;
     if (mem::IsReadable(gReplay, sizeof(CReplay)) && gReplay->IsPlayingBack())

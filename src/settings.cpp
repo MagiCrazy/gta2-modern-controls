@@ -23,9 +23,11 @@ const char kDefaultIni[] =
     "Enabled=1\r\n"
     "; Trigger travel (0-255) above which R2 / L2 count as pressed.\r\n"
     "TriggerThreshold=40\r\n"
-    "; Tank, fire truck, gun jeep: the right stick aims the turret. Max turn per frame,\r\n"
-    "; in degrees x 4 (40 = 10 degrees, twice the game's own speed).\r\n"
-    "TurretStep=40\r\n"
+    "; Tank, fire truck, gun jeep: 0 = right stick left / right rotates the turret at a fixed\r\n"
+    "; speed (like the original Special + left / right), 1 = the turret points at the stick.\r\n"
+    "TurretAim=0\r\n"
+    "; Turret turn per frame, in degrees x 4 (20 = 5 degrees, the game's own speed).\r\n"
+    "TurretStep=20\r\n"
     "\r\n"
     "[OnFoot]\r\n"
     "; Left stick / D-pad give an absolute direction on screen.\r\n"
@@ -48,7 +50,7 @@ const char kDefaultIni[] =
     "CarRange=100\r\n"
     "OnFootRange=100\r\n";
 
-Settings g_settings = {true, true, true, 40, 40, 96, 180, true, 80, true, 100, 100, true};
+Settings g_settings = {true, true, true, 40, false, 20, 96, 180, true, 80, true, 100, 100, true};
 char g_path[MAX_PATH + 32] = {};
 
 int Clamp(int v, int lo, int hi) {
@@ -81,7 +83,8 @@ void Load() {
     s.probeLog = ReadInt("General", "ProbeLog", 1) != 0;
     s.vehicle = ReadInt("Vehicle", "Enabled", 1) != 0;
     s.triggerThreshold = Clamp(ReadInt("Vehicle", "TriggerThreshold", 40), 1, 254);
-    s.turretStep = Clamp(ReadInt("Vehicle", "TurretStep", 40), 4, 720);
+    s.turretAim = ReadInt("Vehicle", "TurretAim", 0) != 0;
+    s.turretStep = Clamp(ReadInt("Vehicle", "TurretStep", 20), 4, 720);
     s.onFoot = ReadInt("OnFoot", "Enabled", 1) != 0;
     s.turnStep = Clamp(ReadInt("OnFoot", "TurnStep", 96), 4, 720);
     s.walkTolerance = Clamp(ReadInt("OnFoot", "WalkTolerance", 180), 0, 720);
