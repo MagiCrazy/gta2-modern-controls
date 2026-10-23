@@ -2,7 +2,8 @@
 
 ASI plugin for **GTA 2 9.6.0.0** that replaces the "tank" controls with modern
 gamepad controls: absolute movement, trigger driving, twin-stick aiming and a
-free camera look. Made for the Steam Deck, works with any XInput gamepad.
+free camera look. Made and tested on the Steam Deck; other XInput gamepads
+should work but are untested.
 
 It is a 9.6 port and extension of Dege's Twin Stick mod (made for 11.44),
 built as a plugin-sdk ASI that coexists with GInput, Frontend Fix and the
@@ -31,7 +32,8 @@ button (⧉), Start the Menu button (≡).
 | Start | Pause | Pause |
 
 L1 and R1 are left free. In classic mode the game and GInput behave as
-without the plugin (L3, R3 and Select + R3 keep working).
+without the plugin; only L3, R3, Select + R3 and the radio on D-pad ↑ / ↓
+keep working.
 
 Notes:
 
