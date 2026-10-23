@@ -1,119 +1,75 @@
-# Modern controls — play-test checklist (Steam Deck, Game mode)
+# Release checklist (Steam Deck, Game mode)
 
-Covers vehicle controls, on-foot absolute movement, the ini and the in-game
-toggle. Play a few normal games; no markers needed. Note anything odd with the
-situation it happened in (on foot / in a car, mission, what you pressed).
+Run once on each release candidate (`vX.Y.Z-rcN`) before tagging the final
+version. Controls are described in the [README](../README.md#controls). Play a
+few normal games and note anything odd with the situation it happened in (on
+foot / in a vehicle, mission, what you pressed).
 
-## Deploy
+## Deploy the candidate
 
 ```sh
+tag=v1.0.0-rc1
 cd ~/Games/gta2/game/scripts
 curl -fsSL --remote-name-all \
-  https://github.com/MagiCrazy/gta2-modern-controls/releases/download/dev/GTA2ModernControls.asi \
-  https://github.com/MagiCrazy/gta2-modern-controls/releases/download/dev/SHA256SUMS
+  https://github.com/MagiCrazy/gta2-modern-controls/releases/download/$tag/GTA2ModernControls.asi \
+  https://github.com/MagiCrazy/gta2-modern-controls/releases/download/$tag/SHA256SUMS
 sha256sum -c SHA256SUMS && rm SHA256SUMS
 ```
 
-`GTA2ModernControls.ini` is created next to the `.asi` on first launch.
+To check the defaults, delete `GTA2ModernControls.ini` first (it is recreated
+on launch). Set `ProbeLog=1` in it to get a log to attach to a report; its
+first line shows the version.
 
-## Mapping (Deck labels)
+## On foot
 
-| Button | On foot | In a car |
-|---|---|---|
-| Left stick | Walk towards that direction | Steer |
-| D-pad ← / → | Previous / next weapon | Previous / next weapon |
-| D-pad ↑ / ↓ | — | Next / previous radio station (civilian cars) |
-| Right stick | Aim (sprite and shots); released = aim where you walk | Look around (camera); tank / fire truck / gun jeep: ← / → rotate the turret |
-| R2 | Attack | Accelerate |
-| L2 | Hold: right stick looks around instead of aiming | Brake / reverse |
-| A | Jump | Handbrake |
-| X | — | Attack |
-| L1 / R1 | — (reserved for modifiers) | — (reserved for modifiers) |
-| Y | Enter / exit | Enter / exit |
-| B | Special | Special (horn) |
-| L3 | Repeat the last message (press again for older ones) | same |
-| R3 | Show the district name | same |
-| Select + R3 | Toggle modern / classic | Toggle modern / classic |
-
-## Checklist
-
-On foot
 - [ ] Each of the 8 directions walks that way on screen; releasing the stick stops.
-- [ ] The D-pad no longer walks; ← / → switch weapon once per press.
 - [ ] Reversing direction turns quickly without walking the wrong way first.
 - [ ] Small stick movements do not make the player jitter in place.
-- [ ] Jump (A), attack (R2), weapon switch (D-pad ← / →) work, also while walking.
-- [ ] Entering / leaving a car (Y) still works; nothing odd during the animation.
-- [ ] Pressing R2 during the enter animation does not shoot; it accelerates
-      once seated.
-- [ ] Leaving a car with R2 held does not shoot; releasing then pressing R2 does.
-- [ ] Holding D-pad ← / → switches weapon once per press (no flicker / cycling).
+- [ ] Jump (A), attack (R2), weapon switch (D-pad ← / →, once per press) work,
+      also while walking.
+- [ ] Entering / leaving a vehicle (Y) works; nothing odd during the animation.
+- [ ] R2 during the enter animation does not shoot; it accelerates once seated.
+- [ ] Leaving a vehicle with R2 held does not shoot; releasing then pressing R2 does.
 - [ ] Falling, dying, getting arrested: no stuck movement afterwards.
 
-Aiming (right stick)
+## Aiming and camera
+
 - [ ] Standing still, the right stick turns the player to face each of the
       8 directions (up on the stick = up on screen); R2 shoots that way.
 - [ ] Walking one way while aiming another: shots go where the right stick
       points, the player keeps walking where the left stick points.
-- [ ] Shooting while walking backwards (left stick away from the target).
 - [ ] Releasing the right stick: the player faces the walking direction again.
 - [ ] Throwing weapons (grenades, molotovs) go towards the aim.
-- [ ] Entering a car while aiming, and leaving it: nothing stuck, aim resets.
+- [ ] On foot, aiming keeps the camera still.
+- [ ] On foot, L2 + right stick looks around, diagonals reach the corners;
+      releasing L2 recentres smoothly and aiming resumes.
+- [ ] In a vehicle, the right stick looks around (also while driving),
+      diagonals reach the corners; releasing it recentres smoothly.
 
-Camera look
-- [ ] In a car, the right stick moves the view that way (further with more
-      deflection), also while driving; releasing it recentres smoothly.
-- [ ] On foot, aiming with the right stick keeps the camera still.
-- [ ] On foot, holding L2 + right stick looks around (aim frozen, player can
-      still walk); releasing L2 recentres smoothly and aiming resumes.
-- [ ] Keyboard Left Alt + arrows still looks around (if a keyboard is at hand).
+## Vehicles
 
-Turret vehicles (tank, fire truck, gun jeep)
-- [ ] Right stick ← / → rotates the turret / water cannon at the game's own
-      speed, one way or the other; X fires where it points.
-- [ ] Releasing the right stick: the turret keeps its angle relative to the vehicle.
-- [ ] Steering while rotating the turret still steers.
-- [ ] `TurretAim=1`: the turret points at the right stick's direction on screen
-      instead (fire truck not off by 180°).
-- [ ] Stick released, B + left / right still rotates the turret as in the original game.
-
-Function keys
-- [ ] L3 repeats the last mission message; pressing again shows older ones.
-- [ ] R3 shows the district name; Select + R3 still only toggles modern / classic.
-- [ ] D-pad ↑ / ↓ in a civilian car change the radio station; nothing in a
-      police car or on foot.
-
-In a car
 - [ ] R2 accelerates, L2 brakes then reverses, half-pressed triggers count.
-- [ ] Steering with the stick while accelerating; D-pad ← / → switch the
+- [ ] Steering with the left stick while accelerating; D-pad ← / → switch the
       vehicle weapon instead of steering.
-- [ ] Handbrake (A), horn (B), attack (X) on an armed vehicle.
-- [ ] Police car / ambulance, siren off: holding B (> 0.25 s) honks and does
-      not toggle the siren; a short tap toggles it on release. (With the siren
-      on, the original game mutes the horn.)
+- [ ] Handbrake (A), attack (X) on an armed vehicle.
+- [ ] Horn: holding B honks. Police car / ambulance: a short tap toggles the
+      siren on release; holding B with the siren off honks, with the siren on
+      it changes the siren tone.
+- [ ] D-pad ↑ / ↓ in a civilian car change the radio station; nothing in a
+      police car.
+- [ ] Turret (tank, fire truck, gun jeep): right stick ← / → rotates it at the
+      game's own speed while still steering; releasing keeps its angle; X fires
+      where it points; B + left / right still works.
 
-General
+## General
+
+- [ ] L3 repeats the last mission message; pressing again shows older ones.
+- [ ] R3 shows the district name.
 - [ ] Select + R3 shows "Modern controls" / "Classic controls" and switches
-      behaviour immediately; the choice survives a restart (`Enabled` in the ini).
+      immediately; the choice survives a restart.
+- [ ] Classic mode behaves like the game without the plugin.
 - [ ] Pause menu: the player does not move while paused; Frontend Fix's pause
       menu still works.
 - [ ] Cutscenes / scripted sequences: the player does not move on their own.
 - [ ] Quit to the main menu and start again: no stuck movement.
-
-## Tuning
-
-`GTA2ModernControls.ini`:
-
-| Key | Default | Effect |
-|---|---|---|
-| `[OnFoot] TurnStep` | 96 | Max turn per frame (degrees x 4). Higher = snappier. |
-| `[OnFoot] WalkTolerance` | 180 | How well aligned the player must be before walking (degrees x 4). |
-| `[Vehicle] TriggerThreshold` | 40 | Trigger travel (0-255) that counts as pressed. |
-| `[Vehicle] TurretAim` | 0 | 0 = right stick ← / → rotates the turret, 1 = it points at the stick. |
-| `[Vehicle] TurretStep` | 20 | Turret turn per frame (degrees x 4), the game's own speed. |
-| `[Aim] Enabled` | 1 | Right-stick aiming. |
-| `[Aim] DeadZone` | 80 | Right stick deflection (0-255) needed to aim or look. |
-| `[Look] Enabled` | 1 | Right-stick camera look. |
-| `[Look] CarRange` | 100 | Look distance in a car, % of the game's own look. |
-| `[Look] OnFootRange` | 100 | Look distance on foot (L2 held), same unit. |
-| `[General] ProbeLog` | 1 | Diagnostics log; send `GTA2ModernControls.log` with any report. |
+- [ ] No `GTA2ModernControls.log` is written with the default ini.
