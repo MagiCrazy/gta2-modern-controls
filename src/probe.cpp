@@ -298,7 +298,7 @@ void LateInit() {
     log::Write("legend: t=tick ms f=frame [why] ped=GetPed() raw=m_pPed st=m_nPedState car=GetCar()!=0(m_pCurrentCar) "
                "ic=byte@5E20BC rot=m_nRotation(deg=raw/4) rot2=obj+42 ctl=bytes@5ECACC,5ECACD "
                "rp=gReplay->GetButton(0..11) pb=m_bButton*(0..10) [order %s] "
-               "spd=obj+80>+8>+38 (value, /256) gs=m_eGameStatus rep=IsPlayingBack "
+               "sp=special,changed [hn=car+A7 horn sr=car+A4 siren] spd=obj+80>+8>+38 (value, /256) gs=m_eGameStatus rep=IsPlayingBack "
                "gi=GInput NewState (c=IsConnected/field, L/R sticks, L1 L2 R1 R2, D=up,down,left,right, "
                "face=sq,tr,cr,ci, L3 R3 St Se) xi=XInput (slot, L/R sticks, LT RT, buttons hex)",
                kControlKeyNames);
@@ -478,6 +478,9 @@ void OnProcessPlayerKeys(CPlayerPed* player) {
         if (ks.gameStatus != g_prev.gameStatus)
             AppendReason(why, sizeof(why), "gamestatus");
     }
+    // Every frame while Special is held in a car: the horn logic counts frames.
+    if (car && player->m_bButtonSpecial)
+        AppendReason(why, sizeof(why), "horn");
     bool transition = why[0] != '\0';
     g_prev = ks;
     g_havePrev = true;
@@ -543,16 +546,30 @@ void OnProcessPlayerKeys(CPlayerPed* player) {
     else
         snprintf(ctlStr, sizeof(ctlStr), "?");
 
+    // Special button + its change flag, and the car's horn (+0xA7) / siren
+    // (+0xA4) bytes, to follow the tap = siren / hold = horn logic (0x4260C0).
+    char hornStr[32];
+    uint8_t horn = 0;
+    uint8_t siren = 0;
+    if (car && mem::Read(reinterpret_cast<uintptr_t>(car) + 0xA7, horn) &&
+        mem::Read(reinterpret_cast<uintptr_t>(car) + 0xA4, siren))
+        snprintf(hornStr, sizeof(hornStr), "%d%d hn=%02X sr=%02X", player->m_bButtonSpecial ? 1 : 0,
+                 player->m_bOldButtonSpecial ? 1 : 0, horn, siren);
+    else
+        snprintf(hornStr, sizeof(hornStr), "%d%d", player->m_bButtonSpecial ? 1 : 0,
+                 player->m_bOldButtonSpecial ? 1 : 0);
+
     char icStr[8];
     if (ks.inCarByte >= 0)
         snprintf(icStr, sizeof(icStr), "%02X", ks.inCarByte);
     else
         snprintf(icStr, sizeof(icStr), "?");
 
-    log::Write("t=%lu f=%u [%s] ped=%08X raw=%08X st=%d car=%d(%08X) ic=%s rot=%s ctl=%s rp=%s pb=%s spd=%s gs=%d "
-               "rep=%d gi=%s xi=%s",
+    log::Write("t=%lu f=%u [%s] ped=%08X raw=%08X st=%d car=%d(%08X) ic=%s rot=%s ctl=%s rp=%s pb=%s sp=%s spd=%s "
+               "gs=%d rep=%d gi=%s xi=%s",
                static_cast<unsigned long>(now), g_frame, why, U32(ks.ped), U32(rawPed), static_cast<int>(ks.pedState),
-               ks.hasCar ? 1 : 0, U32(rawCar), icStr, rotStr, ctlStr, rp, pb, spd, ks.gameStatus, ks.replay ? 1 : 0,
+               ks.hasCar ? 1 : 0, U32(rawCar), icStr, rotStr, ctlStr, rp, pb, hornStr, spd, ks.gameStatus,
+               ks.replay ? 1 : 0,
                giStr, xiStr);
 }
 
