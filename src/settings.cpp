@@ -15,8 +15,8 @@ const char kDefaultIni[] =
     "[General]\r\n"
     "; 1 = modern controls, 0 = classic. Toggle in game with Select + R3.\r\n"
     "Enabled=1\r\n"
-    "; Write GTA2ModernControls.log (diagnostics).\r\n"
-    "ProbeLog=1\r\n"
+    "; 1 = write GTA2ModernControls.log (diagnostics, for bug reports; grows quickly).\r\n"
+    "ProbeLog=0\r\n"
     "\r\n"
     "[Vehicle]\r\n"
     "; R2 accelerates, L2 brakes / reverses.\r\n"
@@ -50,7 +50,7 @@ const char kDefaultIni[] =
     "CarRange=100\r\n"
     "OnFootRange=100\r\n";
 
-Settings g_settings = {true, true, true, 40, false, 20, 96, 180, true, 80, true, 100, 100, true};
+Settings g_settings = {true, true, true, 40, false, 20, 96, 180, true, 80, true, 100, 100, false};
 char g_path[MAX_PATH + 32] = {};
 
 int Clamp(int v, int lo, int hi) {
@@ -80,7 +80,7 @@ void Load() {
 
     Settings& s = g_settings;
     s.enabled = ReadInt("General", "Enabled", 1) != 0;
-    s.probeLog = ReadInt("General", "ProbeLog", 1) != 0;
+    s.probeLog = ReadInt("General", "ProbeLog", 0) != 0;
     s.vehicle = ReadInt("Vehicle", "Enabled", 1) != 0;
     s.triggerThreshold = Clamp(ReadInt("Vehicle", "TriggerThreshold", 40), 1, 254);
     s.turretAim = ReadInt("Vehicle", "TurretAim", 0) != 0;

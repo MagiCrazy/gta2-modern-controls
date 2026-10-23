@@ -6,6 +6,7 @@
 #include "CReplay.h"
 
 #include "probe.h"
+#include "version.h"
 
 #include "gameutil.h"
 #include "ginput.h"
@@ -88,8 +89,6 @@ unsigned int g_frame = 0;
 DWORD g_lastLogTick = 0;
 bool g_havePrev = false;
 KeyState g_prev;
-bool g_prevL3 = false;
-unsigned int g_markerCount = 0;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -369,8 +368,8 @@ void OnLoad() {
     SYSTEMTIME st;
     GetLocalTime(&st);
     log::Write("%s", "");
-    log::Write("==== GTA2ModernControls Phase 1 probe | built %s %s | session %04u-%02u-%02u %02u:%02u:%02u ====",
-               __DATE__, __TIME__, static_cast<unsigned int>(st.wYear), static_cast<unsigned int>(st.wMonth),
+    log::Write("==== GTA2ModernControls %s diagnostics | session %04u-%02u-%02u %02u:%02u:%02u ====", GMC_VERSION,
+               static_cast<unsigned int>(st.wYear), static_cast<unsigned int>(st.wMonth),
                static_cast<unsigned int>(st.wDay), static_cast<unsigned int>(st.wHour),
                static_cast<unsigned int>(st.wMinute), static_cast<unsigned int>(st.wSecond));
     log::Write("log: %s", log::Path());
@@ -446,15 +445,6 @@ void OnProcessPlayerKeys(CPlayerPed* player) {
     int xslot = -1;
     bool xok = xinput::Poll(xs, xslot);
     ks.xiSlot = xok ? xslot : -1;
-
-    // --- marker on L3 rising edge ---
-    bool l3 = (gi.valid && gi.state.leftShock != 0) || (xok && (xs.gamepad.buttons & xinput::BTN_LEFT_THUMB) != 0);
-    if (l3 && !g_prevL3) {
-        ++g_markerCount;
-        log::Write("--- MARKER %u --- (t=%lu f=%u)", g_markerCount, static_cast<unsigned long>(now), g_frame);
-        log::Flush();
-    }
-    g_prevL3 = l3;
 
     // --- transitions ---
     char why[96] = "";
@@ -574,7 +564,7 @@ void OnProcessPlayerKeys(CPlayerPed* player) {
 }
 
 void OnShutdown() {
-    log::Write("==== shutdown (frames=%u markers=%u) ====", g_frame, g_markerCount);
+    log::Write("==== shutdown (frames=%u) ====", g_frame);
     log::Close();
 }
 
